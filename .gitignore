@@ -105,3 +105,7 @@ dist
 
 #adding db.ts which has db credentials
 server/src/db/db.ts
+
+#lock files
+client/package-lock.json
+client/yarn.lock

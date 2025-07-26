@@ -2,9 +2,12 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import type { Ingredient } from '@shared/types/types'
 
 function App() {
   const [count, setCount] = useState(0)
+  const asd: Ingredient = {id: "", name: 'asd'}
+  console.log(asd)
 
   return (
     <>
