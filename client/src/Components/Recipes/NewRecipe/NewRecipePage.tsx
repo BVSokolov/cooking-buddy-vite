@@ -115,35 +115,66 @@ const Section = ({
   console.log('sectionIndex ', sectionIndex)
   if (sectionIndex === -1) return null
 
-  return <FormInput name={`sections.${sectionIndex}.name`} type="text" required />
+  const onClickRemoveSection = () => {}
+
+  return (
+    <div>
+      <input type="button" value="remove" onClick={onClickRemoveSection} />
+      <FormInput name={`sections.${sectionIndex}.name`} type="text" required />
+    </div>
+  )
 }
 
 const Ingredients = () => {
-  const {fields: ingredientFields, append: appendIngredient} = useFieldArray<
-    Partial<{ingredients: NewRecipeFormData['ingredients']}>,
-    'ingredients',
-    'id'
-  >({
+  const {
+    fields: ingredientFields,
+    append: appendIngredient,
+    remove: removeIngredient,
+  } = useFieldArray<Partial<{ingredients: NewRecipeFormData['ingredients']}>, 'ingredients', 'id'>({
     name: 'ingredients',
   })
-  const {fields: sectionFields, append: appendSection} = useFieldArray<
-    Partial<{sections: NewRecipeFormData['sections']}>,
-    'sections',
-    'id'
-  >({
+  const {
+    fields: sectionFields,
+    append: appendSection,
+    remove: removeSection,
+  } = useFieldArray<Partial<{sections: NewRecipeFormData['sections']}>, 'sections', 'id'>({
     name: 'sections',
   })
 
-  let currentCreateTempSectionId: NewRecipeSectionFormData['tempSectionId'] =
-    sectionFields.at(-1) !== undefined ? sectionFields.at(-1)!.tempSectionId : null
-  const onClickAddIngredient = () => {
-    appendIngredient(getDefaultIngredientValues(ingredientFields.length, currentCreateTempSectionId))
+  const onClickAddIngredient = (_e: React.MouseEvent, tempSectionId?: number) => {
+    console.log('asd ', tempSectionId)
+    const thisTempSectionId = tempSectionId
+      ? tempSectionId
+      : sectionFields.at(-1) !== undefined
+      ? sectionFields.at(-1)!.tempSectionId
+      : null
+    appendIngredient(getDefaultIngredientValues(ingredientFields.length, thisTempSectionId))
   }
 
-  const onClickAddSection = () => {
-    currentCreateTempSectionId = Date.now()
-    appendSection(getDefaultSectionValues(currentCreateTempSectionId))
-    onClickAddIngredient()
+  const onClickAddSection = (e: React.MouseEvent) => {
+    const tempSectionId = Date.now()
+    appendSection(getDefaultSectionValues(tempSectionId))
+    onClickAddIngredient(e, tempSectionId)
+  }
+
+  const onClickRemoveIngredient = (index: number) => {
+    const ingredientTempSectionId = ingredientFields.at(index)?.tempSectionId
+
+    if (ingredientTempSectionId !== null) {
+      // check if the element is alone or if its neighbours are in different sections
+      const leftDiff =
+        index - 1 < 0 || ingredientFields.at(index - 1)?.tempSectionId !== ingredientTempSectionId
+      const rightDiff =
+        index + 1 > ingredientFields.length ||
+        ingredientFields.at(index + 1)?.tempSectionId !== ingredientTempSectionId
+      if (leftDiff && rightDiff) {
+        const sectionIndex = sectionFields.findIndex(
+          ({tempSectionId}) => tempSectionId === ingredientTempSectionId,
+        )
+        removeSection(sectionIndex)
+      }
+    }
+    removeIngredient(index)
   }
 
   let currentLoopTempSectionId: NewRecipeSectionFormData['tempSectionId'] = null
@@ -164,6 +195,7 @@ const Ingredients = () => {
           <div key={`${ingredientField.id}-row`}>
             {SectionEl}
             <div key={`${ingredientField.id}-ingredient`}>
+              <input type="button" value="remove" onClick={() => onClickRemoveIngredient(index)} />
               <FormInput name={`ingredients.${index}.name`} label="name" type="text" required />
               <FormInput name={`ingredients.${index}.amount`} label="amount" type="number" required />
               <FormSelect name={`ingredients.${index}.amountUOM`} required>
@@ -180,6 +212,13 @@ const Ingredients = () => {
       <div>
         <input type="button" value="add ingredient" onClick={onClickAddIngredient} />
         <input type="button" value="add section" onClick={onClickAddSection} />
+
+        {/* <button type="button" onClick={onClickAddIngredient}>
+          add ingredient
+        </button>
+        <button type="button" onClick={onClickAddSection}>
+          add section
+        </button> */}
       </div>
     </div>
   )
