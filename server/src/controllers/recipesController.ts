@@ -29,9 +29,8 @@ const newRecipe = async (ctx: NewRecipeEndpointCtx) => {
   const recipeData = ctx.body
   const {db, trx} = ctx
   const recipeId = await recipesFacade.newRecipe({db, trx}, recipeData)
-  const recipe = await recipesFacade.getById(db, recipeId)
 
-  ctx.response.body = JSON.stringify(recipe)
+  ctx.response.body = recipeId
   ctx.status = 200
   return ctx
 }

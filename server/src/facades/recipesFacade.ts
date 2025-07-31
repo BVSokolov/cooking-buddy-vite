@@ -18,52 +18,51 @@ const newRecipe = async ({db, trx}: FacadeContext, recipeData: NewRecipeFormData
   const {name, servings, time} = recipeData
   const recipeId = await recipeDao.createNew(trx, {name, servings})
 
-  // // then we create a row in the recipeTime table using recipe id
-  // await recipeTimeDao.createNew(trx, {recipeId, ...time})
+  // then we create a row in the recipeTime table using recipe id
+  await recipeTimeDao.createNew(trx, {recipeId, ...time})
 
-  // // then (if there are any ingredient sections in the recipe) we create an entry for each section in the recipeSection table and return its id
-  // const {sections} = recipeData
-  // const sectionIndexToIdMap = {}
-  // for (const {name, position} of sections) {
-  //   const sectionId = await recipeSectionDao.createNew(trx, {recipeId, name, position})
-  //   sectionIndexToIdMap[position] = sectionId
-  // }
+  // then (if there are any ingredient sections in the recipe) we create an entry for each section in the recipeSection table and return its id
+  const {sections} = recipeData
+  const sectionIndexToIdMap = {}
+  for (const {name, tempSectionId} of sections) {
+    const sectionId = await recipeSectionDao.createNew(trx, {recipeId, name})
+    sectionIndexToIdMap[tempSectionId] = sectionId
+  }
 
-  // const getSectionId = (sectionIndex: number | null, errorMsg: string) => {
-  //   if (sectionIndex === null) return undefined
+  const getSectionId = (sectionIndex: number | null, errorMsg: string) => {
+    if (sectionIndex === null) return undefined
 
-  //   const sectionId = sectionIndexToIdMap[sectionIndex]
-  //   if (sectionId === undefined) throw new Error(errorMsg)
+    const sectionId = sectionIndexToIdMap[sectionIndex]
+    if (sectionId === undefined) throw new Error(errorMsg)
 
-  //   return sectionId
-  // }
+    return sectionId
+  }
 
-  // // then we create each ingredient (if it doesn't exist) in the ingredient table and return its id
-  // // then using recipeId and ingredientId (and recipeSectionId if available)...
-  // // ...we create an entry for each ingredient in the recipeIngredient table along amount and UOM
-  // const {ingredients} = recipeData
-  // for (const {name, refId, sectionIndex, ...rest} of ingredients) {
-  //   const ingredientId = await ingredientDao.gotIdByName({db, trx}, name)
-  //   const recipeSectionId = getSectionId(
-  //     sectionIndex,
-  //     `ingredient ${name} position ${rest.position} section index ${sectionIndex} to id mismatch`,
-  //   )
+  // then we create each ingredient (if it doesn't exist) in the ingredient table and return its id
+  // then using recipeId and ingredientId (and recipeSectionId if available)...
+  // ...we create an entry for each ingredient in the recipeIngredient table along amount and UOM
+  const {ingredients} = recipeData
+  for (const {name, refId, tempSectionId, ...rest} of ingredients) {
+    const ingredientId = await ingredientDao.gotIdByName({db, trx}, name)
+    const recipeSectionId = getSectionId(
+      tempSectionId,
+      `ingredient ${name} position ${rest.position} section index ${tempSectionId} to id mismatch`,
+    )
 
-  //   await recipeIngredientDao.createNew(trx, {recipeId, ingredientId, recipeSectionId, ...rest})
-  // }
+    await recipeIngredientDao.createNew(trx, {recipeId, ingredientId, recipeSectionId, ...rest})
+  }
 
-  // // // then using recipeId we create an entry for each step in the recipeStep table
-  // const {steps} = recipeData
-  // for (const {text, position, sectionIndex} of steps) {
-  //   // search and replace any ref strings with recipeIngredientId in text here when i implement that on frontend
-  //   const recipeSectionId = getSectionId(
-  //     sectionIndex,
-  //     `step position ${position} section index ${sectionIndex} to id mismatch`,
-  //   )
-  //   await recipeStepDao.createNew(trx, {recipeId, recipeSectionId, text, position}) //.then(trx.commit).catch(trx.rollback)
-  // }
+  // // then using recipeId we create an entry for each step in the recipeStep table
+  const {steps} = recipeData
+  for (const {text, position, tempSectionId} of steps) {
+    // search and replace any ref strings with recipeIngredientId in text here when i implement that on frontend
+    const recipeSectionId = getSectionId(
+      tempSectionId,
+      `step position ${position} section index ${tempSectionId} to id mismatch`,
+    )
+    await recipeStepDao.createNew(trx, {recipeId, recipeSectionId, text, position})
+  }
 
-  // await trx.commit()
   return recipeId
 }
 

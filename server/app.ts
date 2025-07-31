@@ -7,22 +7,24 @@ import {router} from './src/routes'
 
 const app = new Koa()
 
+const isGet = (ctx) => ctx.request.method === 'GET'
+
 app
   .use(Logger())
   .use(cors())
   .use(BodyParser())
   .use(async (ctx, next) => {
-    const trx = await db.transaction()
     ctx.db = db
-    ctx.trx = trx
     ctx.body = ctx.request.body
-    return next()
+    if (!isGet(ctx)) ctx.trx = await db.transaction()
+    await next()
   })
   .use(async (ctx, next) => {
     try {
       await next()
+      if (!isGet(ctx)) ctx.trx.commit()
     } catch (err) {
-      ctx.trx.rollback()
+      if (!isGet(ctx)) ctx.trx.rollback()
       console.log('ROLLED BACK')
 
       ctx.status = err.status || 500
