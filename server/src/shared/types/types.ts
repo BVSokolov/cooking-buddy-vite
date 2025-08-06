@@ -73,27 +73,31 @@ export type RecipeStep = {
 
 export type NewRecipeSectionFormData = {
   name: string
-  tempSectionId: number | null
+  elementIds: Array<string>
+  // tempSectionId: string | null // add color or whatever later, needs to be stored in db as well
 }
 
 export type NewRecipeIngredientFormData = {
+  tempId: string
   name: string
   amount: number
   amountUOM: QuantityMeasureUnit
-  tempSectionId: NewRecipeSectionFormData['tempSectionId'] //current time millis when section was created
+  tempSectionId: string | null //current time millis when section was created
   position: number
   refId: string | null
 }
 
 export type NewRecipeStepFormData = {
+  tempId: string
   text: string
   position: number
-  tempSectionId: NewRecipeSectionFormData['tempSectionId']
+  tempSectionId: string | null
 }
 
+// i should probably move this outside of shared after the changes
 export type NewRecipeFormData = Omit<Recipe, 'id'> & {
   time: Omit<RecipeTime, 'id' | 'recipeId'>
-  sections: Array<NewRecipeSectionFormData> // add color or whatever later, needs to be stored in db as well
+  sections: Record<string, NewRecipeSectionFormData>
   ingredients: Array<NewRecipeIngredientFormData>
   steps: Array<NewRecipeStepFormData>
 }

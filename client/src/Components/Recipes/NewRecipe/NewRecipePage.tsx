@@ -17,11 +17,6 @@ import type {
 import {QuantityUOM, TimeUOM} from '@shared/types/types'
 import {useNewRecipeMutation} from '@/Hooks/Queries/Recipe/recipeQueries'
 
-type useFieldArrayReturnSections = UseFieldArrayReturn<
-  Partial<{sections: NewRecipeFormData['sections']}>,
-  'sections',
-  'id'
->
 type useFieldArrayReturnIngredients = UseFieldArrayReturn<
   Partial<{ingredients: NewRecipeFormData['ingredients']}>,
   'ingredients',
@@ -67,25 +62,32 @@ const FormSelect: FC<FormSelectProps> = ({name, label, children, ...props}) => {
 }
 // <==
 
-const getDefaultSectionValues = (tempSectionId: number | null): NewRecipeSectionFormData => ({
+const getDefaultSectionValues = (): NewRecipeSectionFormData => ({
   name: '',
-  tempSectionId,
+  elementIds: [],
 })
 
 const getDefaultIngredientValues = (
+  tempId: string,
+  tempSectionId: string | null,
   index: number,
-  tempSectionId: number | null,
 ): NewRecipeIngredientFormData => ({
+  tempId,
   name: '',
   amount: 0,
   //@ts-ignore TODO: remove this and fix the shared types
   amountUOM: QuantityUOM.ITEM,
   position: index,
   refId: null,
-  tempSectionId,
+  tempSectionId: tempSectionId,
 })
 
-const getDefaultStepValues = (index: number, tempSectionId: number | null): NewRecipeStepFormData => ({
+const getDefaultStepValues = (
+  tempId: string,
+  tempSectionId: string | null,
+  index: number,
+): NewRecipeStepFormData => ({
+  tempId,
   text: '',
   position: index,
   tempSectionId,
@@ -108,78 +110,102 @@ const getDefaultValues = (): NewRecipeFormData => ({
     //@ts-ignore TODO: remove this and fix the shared types
     totalUOM: TimeUOM.NONE,
   },
-  sections: [],
+  sections: {},
   ingredients: [],
   steps: [],
 })
 
 const Section = ({
-  lastRenderedTempSectionId,
-  tempSectionId,
-  sectionsFieldArray,
+  recipeBodyFieldIndex,
   recipeBodyFieldArray,
 }: {
-  lastRenderedTempSectionId: NewRecipeSectionFormData['tempSectionId']
-  tempSectionId: NewRecipeSectionFormData['tempSectionId']
-  sectionsFieldArray: useFieldArrayReturnSections
+  recipeBodyFieldIndex: number
   recipeBodyFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps
 }) => {
-  const {fields: sectionFields, remove: removeSection} = sectionsFieldArray
+  const {watch, setValue, unregister} = useFormContext()
   const {fields: recipeBodyFields} = recipeBodyFieldArray
-  const {setValue} = useFormContext()
+  const {tempSectionId: elementTempSectionId, tempId: elementId} = recipeBodyFields.at(recipeBodyFieldIndex)!
 
-  if (lastRenderedTempSectionId === tempSectionId) return null
-
-  const sectionIndex = sectionFields.findIndex(
-    (value: NewRecipeSectionFormData) => value.tempSectionId === tempSectionId,
-  )
-  if (sectionIndex === -1) return null // this check shouldn't be necessary but leaving it just in case
+  const sectionKey = `sections.${elementTempSectionId}`
+  const elementIdsKey = `${sectionKey}.elementIds`
+  const elementIds = watch(elementIdsKey) as string[]
+  if (!elementIds || elementIds.at(0) !== elementId) return null
 
   const onClickRemoveSection = () => {
-    recipeBodyFields.forEach(({tempSectionId: fieldTempSectionId}, index) => {
-      if (fieldTempSectionId === tempSectionId) {
-        if ('amount' in recipeBodyFields[index]) {
-          setValue(`ingredients.${index}.tempSectionId`, null)
-        } else {
-          setValue(`steps.${index}.tempSectionId`, null)
-        }
+    elementIds.forEach((elementId) => {
+      const elementIndex = recipeBodyFields.findIndex(({tempId}) => tempId === elementId)
+      if ('amount' in recipeBodyFields[elementIndex]) {
+        setValue(`ingredients.${elementIndex}.tempSectionId`, null)
+      } else {
+        setValue(`steps.${elementIndex}.tempSectionId`, null)
       }
     })
-    removeSection(sectionIndex)
+    unregister(sectionKey)
   }
 
   return (
     <div>
       <input type="button" value="remove" onClick={onClickRemoveSection} />
-      <FormInput name={`sections.${sectionIndex}.name`} type="text" required />
+      <FormInput name={`${sectionKey}.name`} type="text" required />
     </div>
   )
 }
 
 type RemoveProperties = {
-  index: number
   fields:
     | FieldArrayWithId<Partial<{ingredients: NewRecipeFormData['ingredients']}>, 'ingredients', 'id'>[]
     | FieldArrayWithId<Partial<{steps: NewRecipeFormData['steps']}>, 'steps', 'id'>[]
   removeElement: UseFieldArrayRemove
-  sectionsFieldArray: useFieldArrayReturnSections
 }
-const removeIngredientOrStep = ({index, fields, sectionsFieldArray, removeElement}: RemoveProperties) => {
-  const {fields: sectionFields, remove: removeSection} = sectionsFieldArray
-  const fieldTempSectionId = fields.at(index)?.tempSectionId
-  if (fieldTempSectionId !== null) {
-    // check if the element is alone or if its neighbours are in different sections
-    const leftDiff = index - 1 < 0 || fields.at(index - 1)?.tempSectionId !== fieldTempSectionId
-    const rightDiff = index + 1 > fields.length || fields.at(index + 1)?.tempSectionId !== fieldTempSectionId
+const useRemoveIngredientOrStep = ({fields, removeElement}: RemoveProperties) => {
+  const {watch, setValue, unregister} = useFormContext()
 
-    if (leftDiff && rightDiff) {
-      const sectionIndex = sectionFields.findIndex(({tempSectionId}) => tempSectionId === fieldTempSectionId)
-      removeSection(sectionIndex)
+  const handleRemove = (index: number) => {
+    const element = fields.at(index)
+    if (!element) return
+
+    const {tempSectionId, tempId: elementId} = element
+    removeElement(index)
+    if (tempSectionId === null) return
+
+    const sectionKey = `sections.${tempSectionId}`
+    const elementIdsKey = `${sectionKey}.elementIds`
+    const elementIds = [...(watch(elementIdsKey) as string[])]
+    const newElementIds = elementIds.filter((id) => id !== elementId)
+    if (newElementIds.length === 0) {
+      unregister(sectionKey)
+      return
     }
+    setValue(`${elementIdsKey}`, newElementIds)
   }
-  removeElement(index)
+  return handleRemove
 }
-const Ingredients = ({sectionsFieldArray}: {sectionsFieldArray: useFieldArrayReturnSections}) => {
+
+const useUpdateSectionElementIds = ({
+  recipeBodyFieldArray,
+}: {
+  recipeBodyFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps
+}) => {
+  const {setValue, watch} = useFormContext()
+  const {fields} = recipeBodyFieldArray
+
+  const handleUpdate = (tempElementId: string, tempSectionId?: string) => {
+    const thisTempSectionId = tempSectionId
+      ? tempSectionId
+      : fields.at(-1) !== undefined
+      ? fields.at(-1)!.tempSectionId
+      : null
+
+    if (thisTempSectionId !== null) {
+      const key = `sections.${thisTempSectionId}.elementIds`
+      setValue(key, [...(watch(key) as string[]), tempElementId])
+    }
+    return thisTempSectionId
+  }
+  return handleUpdate
+}
+
+const Ingredients = () => {
   const ingredientsFieldArray = useFieldArray<
     Partial<{ingredients: NewRecipeFormData['ingredients']}>,
     'ingredients',
@@ -187,52 +213,37 @@ const Ingredients = ({sectionsFieldArray}: {sectionsFieldArray: useFieldArrayRet
   >({
     name: 'ingredients',
   })
-
-  const {fields: sectionFields, append: appendSection} = sectionsFieldArray
   const {fields: ingredientFields, append: appendIngredient, remove: removeIngredient} = ingredientsFieldArray
+  const {setValue} = useFormContext()
+  const handleRemove = useRemoveIngredientOrStep({
+    fields: ingredientFields,
+    removeElement: removeIngredient,
+  })
+  const handleUpdate = useUpdateSectionElementIds({recipeBodyFieldArray: ingredientsFieldArray})
 
-  const onClickAddIngredient = (_e: React.MouseEvent, tempSectionId?: number) => {
-    const thisTempSectionId = tempSectionId
-      ? tempSectionId
-      : sectionFields.at(-1) !== undefined
-      ? sectionFields.at(-1)!.tempSectionId
-      : null
-    appendIngredient(getDefaultIngredientValues(ingredientFields.length, thisTempSectionId))
+  const onClickAddIngredient = (_e: React.MouseEvent, tempSectionId?: string) => {
+    const tempIngredientId = crypto.randomUUID()
+    const thisTempSectionId = handleUpdate(tempIngredientId, tempSectionId)
+    appendIngredient(getDefaultIngredientValues(tempIngredientId, thisTempSectionId, ingredientFields.length))
   }
 
   const onClickAddSection = (e: React.MouseEvent) => {
-    const tempSectionId = Date.now()
-    appendSection(getDefaultSectionValues(tempSectionId))
+    const tempSectionId = crypto.randomUUID()
+    setValue(`sections.${tempSectionId}`, getDefaultSectionValues())
     onClickAddIngredient(e, tempSectionId)
   }
 
   const onClickRemoveIngredient = (index: number) => {
-    removeIngredientOrStep({
-      index,
-      fields: ingredientFields,
-      sectionsFieldArray,
-      removeElement: removeIngredient,
-    })
+    handleRemove(index)
   }
 
-  let currentLoopTempSectionId: NewRecipeSectionFormData['tempSectionId'] = null
   return (
     <div>
       <h4>Ingredients</h4>
       {ingredientFields.map((ingredientField, index) => {
-        const SectionEl = (
-          <Section
-            key={`${ingredientField.id}-section`}
-            lastRenderedTempSectionId={currentLoopTempSectionId}
-            tempSectionId={ingredientField.tempSectionId}
-            sectionsFieldArray={sectionsFieldArray}
-            recipeBodyFieldArray={ingredientsFieldArray}
-          />
-        )
-        if (SectionEl !== null) currentLoopTempSectionId = ingredientField.tempSectionId
         return (
           <div key={`${ingredientField.id}-row`}>
-            {SectionEl}
+            <Section recipeBodyFieldArray={ingredientsFieldArray} recipeBodyFieldIndex={index} />
             <div key={`${ingredientField.id}-ingredient`}>
               <input type="button" value="remove" onClick={() => onClickRemoveIngredient(index)} />
               <FormInput name={`ingredients.${index}.name`} label="name" type="text" required />
@@ -263,54 +274,41 @@ const Ingredients = ({sectionsFieldArray}: {sectionsFieldArray: useFieldArrayRet
   )
 }
 
-const Steps = ({sectionsFieldArray}: {sectionsFieldArray: useFieldArrayReturnSections}) => {
+const Steps = () => {
   const stepsFieldArray = useFieldArray<Partial<{steps: NewRecipeFormData['steps']}>, 'steps', 'id'>({
     name: 'steps',
   })
-
-  const {fields: sectionFields, append: appendSection} = sectionsFieldArray
   const {fields: stepFields, append: appendStep, remove: removeStep} = stepsFieldArray
+  const {setValue} = useFormContext()
+  const handleRemove = useRemoveIngredientOrStep({
+    fields: stepFields,
+    removeElement: removeStep,
+  })
+  const handleUpdate = useUpdateSectionElementIds({recipeBodyFieldArray: stepsFieldArray})
 
-  let currentCreateTempSectionId: NewRecipeSectionFormData['tempSectionId'] =
-    sectionFields.at(-1) !== undefined ? sectionFields.at(-1)!.tempSectionId : null
-  const onClickAddStep = () => {
-    appendStep(getDefaultStepValues(stepFields.length, currentCreateTempSectionId))
+  const onClickAddStep = (_e: React.MouseEvent, tempSectionId?: string) => {
+    const tempStepId = crypto.randomUUID()
+    const thisTempSectionId = handleUpdate(tempStepId, tempSectionId)
+    appendStep(getDefaultStepValues(tempStepId, thisTempSectionId, stepFields.length))
   }
 
-  const onClickAddSection = () => {
-    currentCreateTempSectionId = Date.now()
-    appendSection(getDefaultSectionValues(currentCreateTempSectionId))
-    onClickAddStep()
+  const onClickAddSection = (e: React.MouseEvent) => {
+    const tempSectionId = crypto.randomUUID()
+    setValue(`sections.${tempSectionId}`, getDefaultSectionValues())
+    onClickAddStep(e, tempSectionId)
   }
 
   const onClickRemoveStep = (index: number) => {
-    removeIngredientOrStep({
-      index,
-      fields: stepFields,
-      sectionsFieldArray,
-      removeElement: removeStep,
-    })
+    handleRemove(index)
   }
 
-  let currentLoopTempSectionId: NewRecipeSectionFormData['tempSectionId'] = null
   return (
     <div>
       <h4>Steps</h4>
       {stepFields.map((stepField, index) => {
-        const SectionEl = (
-          <Section
-            key={`${stepField.id}-section`}
-            lastRenderedTempSectionId={currentLoopTempSectionId}
-            tempSectionId={stepField.tempSectionId}
-            sectionsFieldArray={sectionsFieldArray}
-            recipeBodyFieldArray={stepsFieldArray}
-          />
-        )
-        if (SectionEl !== null) currentLoopTempSectionId = stepField.tempSectionId
-
         return (
           <div key={`${stepField.id}-row`}>
-            {SectionEl}
+            <Section recipeBodyFieldArray={stepsFieldArray} recipeBodyFieldIndex={index} />
             <div key={`${stepField.id}-step`}>
               <input type="button" value="remove" onClick={() => onClickRemoveStep(index)} />
               <FormInput name={`steps.${index}.text`} label={`${index + 1}.`} />
@@ -353,18 +351,10 @@ const Time = () => {
 }
 
 const RecipeBody = () => {
-  const sectionsFieldArray = useFieldArray<
-    Partial<{sections: NewRecipeFormData['sections']}>,
-    'sections',
-    'id'
-  >({
-    name: 'sections',
-  })
-
   return (
     <div>
-      <Ingredients sectionsFieldArray={sectionsFieldArray} />
-      <Steps sectionsFieldArray={sectionsFieldArray} />
+      <Ingredients />
+      <Steps />
     </div>
   )
 }
@@ -378,8 +368,12 @@ export const NewRecipePage = () => {
   })
   const {handleSubmit} = methods
 
-  const onSubmit = (formData: {}) => {
-    alert(JSON.stringify(formData))
+  const onSubmit = (formData: NewRecipeFormData) => {
+    const newRecipeData = {...formData}
+    if (newRecipeData.sections === undefined) newRecipeData.sections = {}
+    // TODO also go over the ingredients and steps and make sure their positions are correct
+
+    alert(JSON.stringify(formData, null, '\t'))
     // mutation.mutate(formData)
   }
 
@@ -393,7 +387,6 @@ export const NewRecipePage = () => {
           <input type="submit" value="Save" />
         </div>
         <Time />
-
         <RecipeBody />
       </form>
     </FormProvider>
