@@ -151,58 +151,176 @@ const Section = ({
   )
 }
 
-type RemoveProperties = {
-  fields:
-    | FieldArrayWithId<Partial<{ingredients: NewRecipeFormData['ingredients']}>, 'ingredients', 'id'>[]
-    | FieldArrayWithId<Partial<{steps: NewRecipeFormData['steps']}>, 'steps', 'id'>[]
-  removeElement: UseFieldArrayRemove
-}
-const useRemoveIngredientOrStep = ({fields, removeElement}: RemoveProperties) => {
+type AppendSectionElementIdFn = (tempSectionId: string, tempElementId: string, isNewElement?: boolean) => void
+type RemoveSectionElementIdFn = (tempSectionId: string, tempElementId: string) => void
+type SortSectionElementIdsFn = (tempSectionId: string) => void
+const useSections = (elementsFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps) => {
   const {watch, setValue, unregister} = useFormContext()
 
-  const handleRemove = (index: number) => {
-    const element = fields.at(index)
-    if (!element) return
+  const _getElementIndex = (elementId: string, tempElementId?: string, isNewElement?: boolean) => {
+    const {fields: elementFields} = elementsFieldArray
+    if (elementId === tempElementId && isNewElement) return elementFields.length
+    else return elementFields.findIndex(({tempId}) => tempId === elementId)
+  }
 
-    const {tempSectionId, tempId: elementId} = element
-    removeElement(index)
-    if (tempSectionId === null) return
+  const _getSortedElementIds = (key: string, tempElementId?: string, isNewElement?: boolean) => {
+    const elementIds = tempElementId
+      ? [...(watch(key) as string[]), tempElementId]
+      : [...(watch(key) as string[])]
+    // sort the elements
+    // get the index of tempElementId in elementFields
 
+    const sortedElementIds = [...elementIds].sort((leftId, rightId) => {
+      console.log(
+        `(${leftId} ${_getElementIndex(leftId, tempElementId, isNewElement)}), (${rightId} ${_getElementIndex(
+          rightId,
+          tempElementId,
+          isNewElement,
+        )})`,
+      )
+      return (
+        _getElementIndex(leftId, tempElementId, isNewElement) -
+        _getElementIndex(rightId, tempElementId, isNewElement)
+      )
+    })
+    // for each element id
+    // get its index in elementFields and compare to index of this element
+    console.log(`[${elementIds}], [${sortedElementIds}]`)
+    return sortedElementIds
+  }
+
+  const createSection = () => {
+    const tempSectionId = crypto.randomUUID()
+    setValue(`sections.${tempSectionId}`, getDefaultSectionValues())
+    return tempSectionId
+  }
+
+  const sortElementIds: SortSectionElementIdsFn = (tempSectionId: string) => {
+    const key = `sections.${tempSectionId}.elementIds`
+    const sortedElementIds = _getSortedElementIds(key)
+    setValue(key, sortedElementIds)
+  }
+
+  const appendElementId: AppendSectionElementIdFn = (tempSectionId, tempElementId, isNewElement) => {
+    const key = `sections.${tempSectionId}.elementIds`
+    const sortedElementIds = _getSortedElementIds(key, tempElementId, isNewElement)
+    setValue(key, sortedElementIds)
+  }
+
+  const removeElementId: RemoveSectionElementIdFn = (tempSectionId, tempElementId) => {
     const sectionKey = `sections.${tempSectionId}`
     const elementIdsKey = `${sectionKey}.elementIds`
     const elementIds = [...(watch(elementIdsKey) as string[])]
-    const newElementIds = elementIds.filter((id) => id !== elementId)
+    const newElementIds = elementIds.filter((id) => id !== tempElementId)
     if (newElementIds.length === 0) {
       unregister(sectionKey)
       return
     }
     setValue(`${elementIdsKey}`, newElementIds)
   }
-  return handleRemove
+
+  return {
+    createSection,
+    appendElementId,
+    removeElementId,
+    sortElementIds,
+  }
 }
 
-const useUpdateSectionElementIds = ({
-  recipeBodyFieldArray,
-}: {
-  recipeBodyFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps
-}) => {
-  const {setValue, watch} = useFormContext()
-  const {fields} = recipeBodyFieldArray
+type AppendElementFn = (
+  elementsFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps,
+  appendSectionElementIdFn: AppendSectionElementIdFn,
+  getDefaultValuesFn: any,
+  newTempSectionId?: string,
+  getDefaultValuesParams?: any[],
+) => void
 
-  const handleUpdate = (tempElementId: string, tempSectionId?: string) => {
-    const thisTempSectionId = tempSectionId
-      ? tempSectionId
-      : fields.at(-1) !== undefined
-      ? fields.at(-1)!.tempSectionId
+const c_appendElement: AppendElementFn = (
+  elementsFieldArray,
+  appendSectionElementIdFn,
+  getDefaultValuesFn,
+  newTempSectionId,
+  getDefaultValuesParams = [],
+) => {
+  const getElementSectionId = () => {
+    const {fields: elementFields} = elementsFieldArray
+    return newTempSectionId
+      ? newTempSectionId
+      : elementFields.at(-1) !== undefined
+      ? elementFields.at(-1)!.tempSectionId
       : null
-
-    if (thisTempSectionId !== null) {
-      const key = `sections.${thisTempSectionId}.elementIds`
-      setValue(key, [...(watch(key) as string[]), tempElementId])
-    }
-    return thisTempSectionId
   }
-  return handleUpdate
+
+  const {append: appendElement} = elementsFieldArray
+  const tempElementId = crypto.randomUUID()
+  const tempSectionId = getElementSectionId()
+  appendElement(getDefaultValuesFn(tempElementId, tempSectionId, ...getDefaultValuesParams))
+  tempSectionId && appendSectionElementIdFn(tempSectionId, tempElementId, true)
+}
+
+type RemoveElementFn = (
+  elementsFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps,
+  index: number,
+  removeElementIdFromSectionFn: RemoveSectionElementIdFn,
+) => void
+
+const c_removeElement: RemoveElementFn = (elementsFieldArray, index, removeElementIdFromSectionFn) => {
+  const {fields, remove: removeElement} = elementsFieldArray
+  const element = fields.at(index)
+  if (!element) return
+
+  const {tempSectionId, tempId: tempElementId} = element
+  removeElement(index)
+  if (tempSectionId === null) return
+
+  removeElementIdFromSectionFn(tempSectionId, tempElementId)
+}
+
+type MoveElementFn = (
+  elementsFieldArray: useFieldArrayReturnIngredients | useFieldArrayReturnSteps,
+  index: number,
+  up: boolean,
+  appendElementIdToSectionFn: AppendSectionElementIdFn,
+  removeElementIdFromSectionFn: RemoveSectionElementIdFn,
+  sortElementIdsFn: SortSectionElementIdsFn,
+  setValue: any,
+) => void
+
+const c_moveElement: MoveElementFn = (
+  elementsFieldArray,
+  index,
+  up,
+  appendElementIdToSectionFn,
+  removeElementIdFromSectionFn,
+  sortElementIdsFn,
+  setValue,
+) => {
+  const {fields: elementFields, move: moveElement, update: updateElement} = elementsFieldArray
+  // first we get the target index
+  const targetIndex = (up ? index + elementFields.length - 1 : index + 1) % elementFields.length // we add the length if we're going down to make sure we never get a negative value
+  console.log(`up ${up}, index ${index}, targetIndex ${targetIndex}`)
+  const element = elementFields.at(index)
+  if (!element) return
+
+  // we get the section id of the element at the target index
+  const targetTempSectionId = elementFields.at(targetIndex)!.tempSectionId
+  // we get the temp section id of the current element
+  const tempSectionId = element.tempSectionId
+  // if they are the same - move the element
+  if (targetTempSectionId === tempSectionId) {
+    console.log('same section')
+    moveElement(index, targetIndex)
+    tempSectionId && sortElementIdsFn(tempSectionId)
+  } else {
+    // if not - do not move the element, instead
+    // update elementIds for the old section of the current element
+    tempSectionId && removeElementIdFromSectionFn(tempSectionId, element.tempId)
+    // AND the elementIds for the new section
+    targetTempSectionId && appendElementIdToSectionFn(targetTempSectionId, element.tempId)
+    // @ts-ignore assign the target section id to the current element TODO REMMOVE THE TS IGNORE AND DO THE CHECK CORRECTLY
+    updateElement(index, {...element, tempSectionId: targetTempSectionId})
+    // setValue(`ingredients.${index}.tempSectionId`, targetTempSectionId)
+  }
 }
 
 const Ingredients = () => {
@@ -213,28 +331,33 @@ const Ingredients = () => {
   >({
     name: 'ingredients',
   })
-  const {fields: ingredientFields, append: appendIngredient, remove: removeIngredient} = ingredientsFieldArray
+  const {fields: ingredientFields} = ingredientsFieldArray
+  const {createSection, appendElementId, removeElementId, sortElementIds} = useSections(ingredientsFieldArray)
   const {setValue} = useFormContext()
-  const handleRemove = useRemoveIngredientOrStep({
-    fields: ingredientFields,
-    removeElement: removeIngredient,
-  })
-  const handleUpdate = useUpdateSectionElementIds({recipeBodyFieldArray: ingredientsFieldArray})
 
   const onClickAddIngredient = (_e: React.MouseEvent, tempSectionId?: string) => {
-    const tempIngredientId = crypto.randomUUID()
-    const thisTempSectionId = handleUpdate(tempIngredientId, tempSectionId)
-    appendIngredient(getDefaultIngredientValues(tempIngredientId, thisTempSectionId, ingredientFields.length))
+    c_appendElement(ingredientsFieldArray, appendElementId, getDefaultIngredientValues, tempSectionId)
   }
 
   const onClickAddSection = (e: React.MouseEvent) => {
-    const tempSectionId = crypto.randomUUID()
-    setValue(`sections.${tempSectionId}`, getDefaultSectionValues())
+    const tempSectionId = createSection()
     onClickAddIngredient(e, tempSectionId)
   }
 
   const onClickRemoveIngredient = (index: number) => {
-    handleRemove(index)
+    c_removeElement(ingredientsFieldArray, index, removeElementId)
+  }
+
+  const onClickMoveIngredient = (index: number, up: boolean) => {
+    c_moveElement(
+      ingredientsFieldArray,
+      index,
+      up,
+      appendElementId,
+      removeElementId,
+      sortElementIds,
+      setValue,
+    )
   }
 
   return (
@@ -246,6 +369,8 @@ const Ingredients = () => {
             <Section recipeBodyFieldArray={ingredientsFieldArray} recipeBodyFieldIndex={index} />
             <div key={`${ingredientField.id}-ingredient`}>
               <input type="button" value="remove" onClick={() => onClickRemoveIngredient(index)} />
+              <input type="button" value="move up" onClick={() => onClickMoveIngredient(index, true)} />
+              <input type="button" value="move down" onClick={() => onClickMoveIngredient(index, false)} />
               <FormInput name={`ingredients.${index}.name`} label="name" type="text" required />
               <FormInput name={`ingredients.${index}.amount`} label="amount" type="number" required />
               <FormSelect name={`ingredients.${index}.amountUOM`} required>
@@ -280,16 +405,11 @@ const Steps = () => {
   })
   const {fields: stepFields, append: appendStep, remove: removeStep} = stepsFieldArray
   const {setValue} = useFormContext()
-  const handleRemove = useRemoveIngredientOrStep({
-    fields: stepFields,
-    removeElement: removeStep,
-  })
-  const handleUpdate = useUpdateSectionElementIds({recipeBodyFieldArray: stepsFieldArray})
 
   const onClickAddStep = (_e: React.MouseEvent, tempSectionId?: string) => {
-    const tempStepId = crypto.randomUUID()
-    const thisTempSectionId = handleUpdate(tempStepId, tempSectionId)
-    appendStep(getDefaultStepValues(tempStepId, thisTempSectionId, stepFields.length))
+    // const tempStepId = crypto.randomUUID()
+    // const thisTempSectionId = handleUpdate(tempStepId, tempSectionId)
+    // appendStep(getDefaultStepValues(tempStepId, thisTempSectionId, stepFields.length))
   }
 
   const onClickAddSection = (e: React.MouseEvent) => {
@@ -299,7 +419,7 @@ const Steps = () => {
   }
 
   const onClickRemoveStep = (index: number) => {
-    handleRemove(index)
+    // handleRemove(index)
   }
 
   return (
