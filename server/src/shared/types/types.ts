@@ -71,37 +71,37 @@ export type RecipeStep = {
   text: string
 }
 
-export type NewRecipeSectionFormData = {
-  name: string
-  elementIds: Array<string>
-  // tempSectionId: string | null // add color or whatever later, needs to be stored in db as well
-}
-
+// ==========================================================
 export type NewRecipeIngredientFormData = {
-  tempId: string
   name: string
   amount: number
   amountUOM: QuantityMeasureUnit
-  tempSectionId: string | null //current time millis when section was created
   position: number
   refId: string | null
 }
 
 export type NewRecipeStepFormData = {
-  tempId: string
   text: string
   position: number
-  tempSectionId: string | null
 }
+
+export type NewRecipeSectionFormData<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = {
+  name: string
+  elements: Array<T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData>
+}
+
+export type RecipeBodySectionsFormData<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = Array<
+  NewRecipeSectionFormData<
+    T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData
+  >
+>
 
 // i should probably move this outside of shared after the changes
 export type NewRecipeFormData = Omit<Recipe, 'id'> & {
   time: Omit<RecipeTime, 'id' | 'recipeId'>
-  sections: Record<string, NewRecipeSectionFormData>
-  ingredients: Array<NewRecipeIngredientFormData>
-  steps: Array<NewRecipeStepFormData>
+  ingredients: RecipeBodySectionsFormData<NewRecipeIngredientFormData>
+  steps: RecipeBodySectionsFormData<NewRecipeStepFormData>
 }
-
 //=> on fronted only:
 //counter = 0
 // ref = {'ref<counter>'}
