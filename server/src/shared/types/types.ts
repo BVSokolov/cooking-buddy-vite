@@ -51,6 +51,7 @@ export type RecipeSection = {
   id: string
   recipeId: string
   name: string
+  position: number
 }
 
 export type RecipeIngredient = {
@@ -71,37 +72,40 @@ export type RecipeStep = {
   text: string
 }
 
-// ==========================================================
-export type NewRecipeIngredientFormData = {
+export type NewRecipeMetaData = Omit<Recipe, 'id'>
+
+export type NewRecipeTimeData = Omit<RecipeTime, 'id' | 'recipeId'>
+
+export type NewRecipeIngredientData = {
   name: string
   amount: number
   amountUOM: QuantityMeasureUnit
+  // refId: string | null
   position: number
-  refId: string | null
 }
 
-export type NewRecipeStepFormData = {
+export type NewRecipeStepData = {
   text: string
   position: number
 }
 
-export type NewRecipeSectionFormData<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = {
+export type NewRecipeSectionData<T extends NewRecipeIngredientData | NewRecipeStepData> = {
   name: string
-  elements: Array<T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData>
+  position: number
+  elements: Array<T extends NewRecipeIngredientData ? NewRecipeIngredientData : NewRecipeStepData>
 }
 
-export type RecipeBodySectionsFormData<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = Array<
-  NewRecipeSectionFormData<
-    T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData
-  >
+export type RecipeBodySectionsData<T extends NewRecipeIngredientData | NewRecipeStepData> = Array<
+  NewRecipeSectionData<T extends NewRecipeIngredientData ? NewRecipeIngredientData : NewRecipeStepData>
 >
 
-// i should probably move this outside of shared after the changes
-export type NewRecipeFormData = Omit<Recipe, 'id'> & {
-  time: Omit<RecipeTime, 'id' | 'recipeId'>
-  ingredients: RecipeBodySectionsFormData<NewRecipeIngredientFormData>
-  steps: RecipeBodySectionsFormData<NewRecipeStepFormData>
+export type NewRecipeData = NewRecipeMetaData & {
+  time: NewRecipeTimeData
+  ingredients: RecipeBodySectionsData<NewRecipeIngredientData>
+  steps: RecipeBodySectionsData<NewRecipeStepData>
 }
+
+// ==========================================================
 //=> on fronted only:
 //counter = 0
 // ref = {'ref<counter>'}

@@ -1,5 +1,5 @@
 import {recipesFacade} from '../facades/recipesFacade'
-import {NewRecipeFormData, Recipe} from '../shared/types/types'
+import {NewRecipeData, Recipe} from '../shared/types/types'
 import {EndpointContext} from '../types/types'
 
 const getRecipes = async (ctx: EndpointContext) => {
@@ -23,7 +23,7 @@ const getRecipe = async (ctx: GetRecipeEndpointCtx) => {
 }
 
 type NewRecipeEndpointCtx = EndpointContext & {
-  body: NewRecipeFormData
+  body: NewRecipeData
 }
 const newRecipe = async (ctx: NewRecipeEndpointCtx) => {
   const recipeData = ctx.body

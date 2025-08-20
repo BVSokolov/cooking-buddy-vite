@@ -1,4 +1,5 @@
 import {api} from '@/api/api'
+import type {NewRecipeData} from '@shared/types/types'
 import {useMutation, useQuery} from '@tanstack/react-query'
 
 const useGetRecipes = () =>
@@ -9,7 +10,7 @@ const useGetRecipes = () =>
 
 const useNewRecipeMutation = () =>
   useMutation({
-    mutationFn: (recipeData: {}) => api.recipes.putRecipe(recipeData),
+    mutationFn: (recipeData: NewRecipeData) => api.recipes.putRecipe(recipeData),
   })
 
 export {useGetRecipes, useNewRecipeMutation}

@@ -1,44 +1,15 @@
-import {useEffect, useState, type FC, type InputHTMLAttributes} from 'react'
-import {
-  FormProvider,
-  useFieldArray,
-  useForm,
-  useFormContext,
-  type FieldArrayWithId,
-  type UseFieldArrayRemove,
-  type UseFieldArrayReturn,
-} from 'react-hook-form'
+import type {FC, InputHTMLAttributes} from 'react'
+import {FormProvider, useFieldArray, useForm, useFormContext, type UseFieldArrayReturn} from 'react-hook-form'
 import type {
-  NewRecipeFormData,
-  NewRecipeIngredientFormData,
-  NewRecipeSectionFormData,
-  NewRecipeStepFormData,
-  RecipeBodySectionsFormData,
+  NewRecipeData,
+  NewRecipeIngredientData,
+  NewRecipeMetaData,
+  NewRecipeStepData,
+  NewRecipeTimeData,
+  RecipeBodySectionsData,
 } from '@shared/types/types'
 import {QuantityUOM, TimeUOM} from '@shared/types/types'
 import {useNewRecipeMutation} from '@/Hooks/Queries/Recipe/recipeQueries'
-
-type RecipeBodyFieldArray<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = Partial<
-  T extends NewRecipeIngredientFormData
-    ? {
-        ingredients: RecipeBodySectionsFormData<NewRecipeIngredientFormData>
-      }
-    : {
-        steps: RecipeBodySectionsFormData<NewRecipeStepFormData>
-      }
->
-
-type useFieldArrayReturnIngredients = UseFieldArrayReturn<
-  RecipeBodyFieldArray<NewRecipeIngredientFormData>,
-  `ingredients.${number}.elements`,
-  'field_id'
->
-
-type useFieldArrayReturnSteps = UseFieldArrayReturn<
-  RecipeBodyFieldArray<NewRecipeStepFormData>,
-  `steps.${number}.elements`,
-  'field_id'
->
 
 //==> TODO Move these elsewhere
 interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -74,6 +45,43 @@ const FormSelect: FC<FormSelectProps> = ({name, label, children, ...props}) => {
 }
 // <==
 
+// ==> move to shared maybe
+
+// type NewRecipeData
+// <==
+
+type NewRecipeMetaFormData = NewRecipeMetaData
+type NewRecipeTimeFormData = NewRecipeTimeData
+type NewRecipeIngredientFormData = Omit<NewRecipeIngredientData, 'position'>
+type NewRecipeStepFormData = Omit<NewRecipeStepData, 'position'>
+
+type NewRecipeSectionFormData<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = {
+  name: string
+  elements: Array<T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData>
+}
+
+type RecipeBodySectionsFormData<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = Array<
+  NewRecipeSectionFormData<
+    T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData
+  >
+>
+
+type NewRecipeFormData = NewRecipeMetaFormData & {
+  time: NewRecipeTimeFormData
+  ingredients: RecipeBodySectionsFormData<NewRecipeIngredientFormData>
+  steps: RecipeBodySectionsFormData<NewRecipeStepFormData>
+}
+
+type RecipeBodyFieldArray<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> = Partial<
+  T extends NewRecipeIngredientFormData
+    ? {
+        ingredients: RecipeBodySectionsFormData<NewRecipeIngredientFormData>
+      }
+    : {
+        steps: RecipeBodySectionsFormData<NewRecipeStepFormData>
+      }
+>
+
 type GetDefaultSectionValues<T extends NewRecipeIngredientFormData | NewRecipeStepFormData> =
   () => NewRecipeSectionFormData<
     T extends NewRecipeIngredientFormData ? NewRecipeIngredientFormData : NewRecipeStepFormData
@@ -85,18 +93,16 @@ const getDefaultSectionValues: GetDefaultSectionValues<
   elements: [],
 })
 
-const getDefaultIngredientValues = (index: number): NewRecipeIngredientFormData => ({
+const getDefaultIngredientValues = (): NewRecipeIngredientFormData => ({
   name: '',
   amount: 0,
   //@ts-ignore TODO: remove this and fix the shared types
   amountUOM: QuantityUOM.ITEM,
-  position: index,
-  refId: null,
+  // refId: null,
 })
 
-const getDefaultStepValues = (index: number): NewRecipeStepFormData => ({
+const getDefaultStepValues = (): NewRecipeStepFormData => ({
   text: '',
-  position: index,
 })
 
 const getDefaultValues = (): NewRecipeFormData => ({
@@ -120,14 +126,14 @@ const getDefaultValues = (): NewRecipeFormData => ({
   steps: [],
 })
 
-type MoveArrayField = (
+type MoveArrayFieldProps = (
   fieldArray: UseFieldArrayReturn<any, any, 'field_id'>,
   index: number,
   up: boolean,
 ) => void
-const moveArrayField: MoveArrayField = (fieldArray, index, up) => {
+const moveArrayField: MoveArrayFieldProps = (fieldArray, index, up) => {
   const {fields: elementFields, move: moveElement} = fieldArray
-  const targetIndex = (up ? index + elementFields.length - 1 : index + 1) % elementFields.length // we add the length if we're going down to make sure we never get a negative value
+  const targetIndex = (up ? index + elementFields.length - 1 : index + 1) % elementFields.length // we add the length if we're going up to make sure we never get a negative value
   console.log(`up ${up}, index ${index}, targetIndex ${targetIndex}`)
 
   console.log('same section')
@@ -155,7 +161,7 @@ const IngredientSection: FC<IngredientSectionProps> = ({index: sectionIndex}) =>
   } = sectionElementsFieldArray
 
   const onClickAddIngredient = () => {
-    appendIngredient(getDefaultIngredientValues(ingredientFields.length))
+    appendIngredient(getDefaultIngredientValues())
   }
 
   const onClickRemoveIngredient = (index: number) => {
@@ -207,7 +213,7 @@ const StepSection: FC<StepSectionProps> = ({index: sectionIndex}) => {
   const {fields: stepFields, append: appendStep, remove: removeStep} = sectionElementsFieldArray
 
   const onClickAddStep = () => {
-    appendStep(getDefaultStepValues(stepFields.length))
+    appendStep(getDefaultStepValues())
   }
 
   const onClickRemoveStep = (index: number) => {
@@ -366,12 +372,29 @@ export const NewRecipePage = () => {
   const {handleSubmit} = methods
 
   const onSubmit = (formData: NewRecipeFormData) => {
-    const newRecipeData = {...formData}
-    // if (newRecipeData.sections === undefined) newRecipeData.sections = {}
-    // TODO also go over the ingredients and steps and make sure their positions are correct
+    const ingredientSectionsData: RecipeBodySectionsData<NewRecipeIngredientData> = formData.ingredients.map(
+      ({name, elements}, index) => ({
+        name,
+        position: index,
+        elements: elements.map((element, index) => ({...element, position: index})),
+      }),
+    )
+    const stepSectionsData: RecipeBodySectionsData<NewRecipeStepData> = formData.steps.map(
+      ({name, elements}, index) => ({
+        name,
+        position: index,
+        elements: elements.map((element, index) => ({...element, position: index})),
+      }),
+    )
 
-    alert(JSON.stringify(formData, null, '\t'))
-    // mutation.mutate(formData)
+    const newRecipeData: NewRecipeData = {
+      ...formData,
+      ingredients: ingredientSectionsData,
+      steps: stepSectionsData,
+    }
+
+    console.log(JSON.stringify(newRecipeData, null, '\t'))
+    mutation.mutate(newRecipeData)
   }
 
   return (
