@@ -1,14 +1,15 @@
-import {Route, Routes, useNavigate, useParams} from 'react-router-dom'
-import {NewRecipePage} from './NewRecipe/NewRecipePage'
-import {useGetRecipe, useGetRecipes} from '@/Hooks/Queries/Recipe/recipeQueries'
-import type {Recipe} from '@shared/types/types'
+import {Route, Routes, useNavigate} from 'react-router-dom'
+import {NewRecipePage} from './NewRecipe/NewRecipe'
+import {useGetRecipes} from '@/Hooks/Queries/Recipe/recipeQueries'
+import type {DB_Recipe} from '@shared/types/types'
+import {Recipe} from './Recipe/Recipe'
 
 const RecipeList = () => {
   const {isLoading, isSuccess, data} = useGetRecipes()
   const navigate = useNavigate()
 
   if (isLoading) return <div>loading...</div>
-  const recipes: Array<Recipe> = data?.data || []
+  const recipes: Array<DB_Recipe> = data?.data || []
 
   return (
     <div>
@@ -29,34 +30,12 @@ const RecipeList = () => {
   )
 }
 
-const RecipePage = () => {
-  const {id} = useParams()
-  console.log(id)
-  if (!id) return <div>error loading recipe id</div>
-
-  const {isLoading, isSuccess, data: recipeData} = useGetRecipe(id)
-  if (isLoading) return <div>loading...</div>
-
-  return (
-    <div>
-      {isSuccess && (
-        <div>
-          <h1>{recipeData.name}</h1>
-          <pre>time: {JSON.stringify(recipeData.time, null, '\t')}</pre>
-          <pre>ingredients: {JSON.stringify(recipeData.ingredients, null, '\t')}</pre>
-          <pre>steps: {JSON.stringify(recipeData.steps, null, '\t')}</pre>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export const Recipes = () => {
   return (
     <Routes>
       <Route path="/" element={<RecipeList />} />
       <Route path="/new" element={<NewRecipePage />} />
-      <Route path="/:id" element={<RecipePage />} />
+      <Route path="/:id" element={<Recipe />} />
     </Routes>
   )
 }

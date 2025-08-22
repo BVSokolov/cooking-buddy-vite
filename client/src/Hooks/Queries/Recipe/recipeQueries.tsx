@@ -1,19 +1,19 @@
 import {api} from '@/api/api'
 import type {
   NewRecipeData,
-  Recipe,
+  DB_Recipe,
   RecipeBodySectionsDataNew,
-  RecipeIngredient,
-  RecipeStep,
-  RecipeTime,
+  DB_RecipeIngredient,
+  DB_RecipeStep,
+  DB_RecipeTime,
 } from '@shared/types/types'
 import {useMutation, useQuery} from '@tanstack/react-query'
 import _ from 'lodash'
 
-export type RecipeData = Recipe & {
-  time: RecipeTime
-  ingredients: RecipeBodySectionsDataNew<RecipeIngredient>
-  steps: RecipeBodySectionsDataNew<RecipeStep>
+export type RecipeData = DB_Recipe & {
+  time: DB_RecipeTime
+  ingredients: RecipeBodySectionsDataNew<DB_RecipeIngredient>
+  steps: RecipeBodySectionsDataNew<DB_RecipeStep>
 }
 
 const useGetRecipes = () =>
@@ -22,7 +22,7 @@ const useGetRecipes = () =>
     queryFn: api.recipes.getRecipes,
   })
 
-const useGetRecipe = (recipeId: Recipe['id']) =>
+const useGetRecipe = (recipeId: DB_Recipe['id']) =>
   useQuery<RecipeData>({
     queryKey: ['recipes', recipeId],
     queryFn: async (): Promise<RecipeData> => {
