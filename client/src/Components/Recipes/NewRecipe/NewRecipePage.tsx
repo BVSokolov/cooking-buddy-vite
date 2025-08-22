@@ -6,10 +6,11 @@ import type {
   NewRecipeMetaData,
   NewRecipeStepData,
   NewRecipeTimeData,
-  RecipeBodySectionsData,
+  RecipeBodySectionsDataNew,
 } from '@shared/types/types'
 import {QuantityUOM, TimeUOM} from '@shared/types/types'
 import {useNewRecipeMutation} from '@/Hooks/Queries/Recipe/recipeQueries'
+import {useNavigate} from 'react-router-dom'
 
 //==> TODO Move these elsewhere
 interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -370,16 +371,16 @@ export const NewRecipePage = () => {
     defaultValues: getDefaultValues(),
   })
   const {handleSubmit} = methods
+  const navigate = useNavigate()
 
   const onSubmit = (formData: NewRecipeFormData) => {
-    const ingredientSectionsData: RecipeBodySectionsData<NewRecipeIngredientData> = formData.ingredients.map(
-      ({name, elements}, index) => ({
+    const ingredientSectionsData: RecipeBodySectionsDataNew<NewRecipeIngredientData> =
+      formData.ingredients.map(({name, elements}, index) => ({
         name,
         position: index,
         elements: elements.map((element, index) => ({...element, position: index})),
-      }),
-    )
-    const stepSectionsData: RecipeBodySectionsData<NewRecipeStepData> = formData.steps.map(
+      }))
+    const stepSectionsData: RecipeBodySectionsDataNew<NewRecipeStepData> = formData.steps.map(
       ({name, elements}, index) => ({
         name,
         position: index,
@@ -394,7 +395,11 @@ export const NewRecipePage = () => {
     }
 
     console.log(JSON.stringify(newRecipeData, null, '\t'))
-    mutation.mutate(newRecipeData)
+    mutation.mutate(newRecipeData, {
+      onSuccess: () => {
+        navigate('/recipes')
+      },
+    })
   }
 
   return (

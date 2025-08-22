@@ -1,8 +1,11 @@
-import axios from 'axios'
+import type {NewRecipeData, Recipe, RecipeDataRaw} from '@shared/types/types'
+import axios, {type AxiosPromise} from 'axios'
 
 const recipes = {
   getRecipes: async () => await axios.get('http://localhost:3000/recipes'),
-  putRecipe: async (data: {}) => await axios.post('http://localhost:3000/recipes/new', data),
+  getRecipe: async (recipeId: Recipe['id']): AxiosPromise<RecipeDataRaw> =>
+    await axios.get(`http://localhost:3000/recipes/${recipeId}`),
+  putRecipe: async (data: NewRecipeData) => await axios.post('http://localhost:3000/recipes/new', data),
 }
 
 const api = {

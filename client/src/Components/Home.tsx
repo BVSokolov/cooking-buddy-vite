@@ -5,20 +5,27 @@ const HomeComponent = () => {
   const navigate = useNavigate()
 
   const goToRecipes = () => {
-    navigate('/recipes')
+    navigate('recipes')
   }
 
   return (
     <div>
-      asdasd
-      <button onClick={(_e) => goToRecipes()}>Recipes</button>
+      <a href="" onClick={(_e) => goToRecipes()}>
+        Recipes
+      </a>
     </div>
   )
 }
 
-export const Home = () => (
-  <Routes>
-    <Route path="/" element={<HomeComponent />} />
-    <Route path="/recipes/*" element={<Recipes />} />
-  </Routes>
-)
+export const Home = () => {
+  const navigate = useNavigate()
+  return (
+    <div>
+      <button onClick={() => navigate(-1)}>Back</button>
+      <Routes>
+        <Route path="/" element={<HomeComponent />} />
+        <Route path="/recipes/*" element={<Recipes />} />
+      </Routes>
+    </div>
+  )
+}

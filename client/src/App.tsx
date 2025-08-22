@@ -11,7 +11,6 @@ function App() {
       <QueryClientProvider client={queryClient}>
         {/* <Navbar /> */}
         <Home />
-        app test
       </QueryClientProvider>
     </div>
   )
