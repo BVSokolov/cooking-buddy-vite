@@ -1,5 +1,5 @@
 import {Context} from 'koa'
-import {recipesController} from './controllers/recipesController'
+import {recipeController} from './controllers/recipeController'
 const router = require('koa-router')()
 
 const root = async (ctx: Context) => {
@@ -9,9 +9,9 @@ const root = async (ctx: Context) => {
 }
 
 router.get('/', root)
-router.get('/recipes', recipesController.getRecipes)
-router.get('/recipes/:recipeId', recipesController.getRecipe)
-router.post('/recipes/new', recipesController.newRecipe)
+router.get('/recipes', recipeController.getRecipes)
+router.get('/recipes/:recipeId', recipeController.getRecipe)
+router.post('/recipes/new', recipeController.newRecipe)
 // router.put('/recipes/:recipeId/edit', recipesController.getRecipe)
 
 export {router}

@@ -5,7 +5,7 @@ import {ingredientDao} from '../daos/ingredientDao'
 import {recipeIngredientDao} from '../daos/recipeIngredientDao'
 import {recipeStepDao} from '../daos/recipeStepDao'
 import {FacadeContext} from '../types/types'
-import {NewRecipeData, RecipeData} from '../shared/types/types'
+import {NewRecipeData, Recipe, RecipeDataRaw} from '../shared/types/types'
 
 const importRecipe = (source: string) => {
   console.log('asd in import', source)
@@ -46,7 +46,7 @@ const newRecipe = async ({db, trx}: FacadeContext, recipeData: NewRecipeData) =>
   return recipeId
 }
 
-const getById = async (db: FacadeContext['db'], recipeId: string): Promise<RecipeData> => {
+const getById = async (db: FacadeContext['db'], recipeId: string): Promise<RecipeDataRaw> => {
   const recipe = await recipeDao.getById(db, recipeId)
   if (recipe === undefined) throw new Error('could not find recipe with provided id')
 
@@ -54,9 +54,14 @@ const getById = async (db: FacadeContext['db'], recipeId: string): Promise<Recip
   const sections = await recipeSectionDao.getByRecipeId(db, recipeId)
   const ingredients = await recipeIngredientDao.getByRecipeId(db, recipeId)
   const steps = await recipeStepDao.getByRecipeId(db, recipeId)
-  const result: RecipeData = {...recipe, time, sections, ingredients, steps}
+  const result: RecipeDataRaw = {...recipe, time, sections, ingredients, steps}
 
   return result
 }
 
-export const recipesFacade = {importRecipe, newRecipe, getById}
+const getAll = async (db: FacadeContext['db']): Promise<Array<Recipe>> => {
+  const result = await recipeDao.getAll(db)
+  return result
+}
+
+export const recipeFacade = {importRecipe, newRecipe, getById, getAll}

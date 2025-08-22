@@ -89,20 +89,22 @@ export type NewRecipeStepData = {
   position: number
 }
 
-export type NewRecipeSectionData<T extends NewRecipeIngredientData | NewRecipeStepData> = {
+export type NewRecipeSectionData<
+  T extends NewRecipeIngredientData | NewRecipeStepData | RecipeIngredient | RecipeStep,
+> = {
   name: string
   position: number
-  elements: Array<T extends NewRecipeIngredientData ? NewRecipeIngredientData : NewRecipeStepData>
+  elements: Array<T>
 }
 
-export type RecipeBodySectionsData<T extends NewRecipeIngredientData | NewRecipeStepData> = Array<
-  NewRecipeSectionData<T extends NewRecipeIngredientData ? NewRecipeIngredientData : NewRecipeStepData>
->
+export type RecipeBodySectionsDataNew<
+  T extends NewRecipeIngredientData | NewRecipeStepData | RecipeIngredient | RecipeStep,
+> = Array<NewRecipeSectionData<T>>
 
 export type NewRecipeData = NewRecipeMetaData & {
   time: NewRecipeTimeData
-  ingredients: RecipeBodySectionsData<NewRecipeIngredientData>
-  steps: RecipeBodySectionsData<NewRecipeStepData>
+  ingredients: RecipeBodySectionsDataNew<NewRecipeIngredientData>
+  steps: RecipeBodySectionsDataNew<NewRecipeStepData>
 }
 
 // ==========================================================
@@ -121,8 +123,9 @@ export type NewRecipeData = NewRecipeMetaData & {
 // steps: [{text: chop the ref0, position: 0, sectionIndex: null},
 //        {text: chop the ref1 and throw the ref1 and ref0 in the pan, position: 1, sectionIndex: null}]
 
-export type RecipeData = Recipe &
-  RecipeTime &
-  Array<RecipeSection> &
-  Array<RecipeIngredient> &
-  Array<RecipeStep>
+export type RecipeDataRaw = Recipe & {
+  time: RecipeTime
+  sections: Array<RecipeSection>
+  ingredients: Array<RecipeIngredient>
+  steps: Array<RecipeStep>
+}

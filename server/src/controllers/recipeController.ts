@@ -1,11 +1,11 @@
-import {recipesFacade} from '../facades/recipesFacade'
+import {recipeFacade} from '../facades/recipeFacade'
 import {NewRecipeData, Recipe} from '../shared/types/types'
 import {EndpointContext} from '../types/types'
 
 const getRecipes = async (ctx: EndpointContext) => {
   const {db} = ctx
   ctx.status = 200
-  // ctx.body = await recipeDao.getAll(db)
+  ctx.body = await recipeFacade.getAll(db)
   return ctx
 }
 
@@ -18,7 +18,7 @@ const getRecipe = async (ctx: GetRecipeEndpointCtx) => {
   const {recipeId} = ctx.params
   const {db} = ctx
   ctx.status = 200
-  ctx.body = await recipesFacade.getById(db, recipeId)
+  ctx.body = await recipeFacade.getById(db, recipeId)
   return ctx
 }
 
@@ -28,14 +28,14 @@ type NewRecipeEndpointCtx = EndpointContext & {
 const newRecipe = async (ctx: NewRecipeEndpointCtx) => {
   const recipeData = ctx.body
   const {db, trx} = ctx
-  const recipeId = await recipesFacade.newRecipe({db, trx}, recipeData)
+  // const recipeId = await recipeFacade.newRecipe({db, trx}, recipeData)
 
-  ctx.response.body = recipeId
+  // ctx.response.body = recipeId
   ctx.status = 200
   return ctx
 }
 
-export const recipesController = {
+export const recipeController = {
   getRecipes,
   getRecipe,
   newRecipe,

@@ -8,7 +8,7 @@ const createNew = async (trx: DaoContext['trx'], data: Omit<RecipeSection, 'id'>
   await gotFirstRow(trx(TABLE_NAME).insert(data, 'id'), 'id')
 
 const getByRecipeId = async (db: DaoContext['db'], recipeId: RecipeSection['recipeId']) =>
-  await db(TABLE_NAME).where({recipeId})
+  await db(TABLE_NAME).where({recipeId}).orderBy('position', 'asc')
 
 export const recipeSectionDao = {
   createNew,
