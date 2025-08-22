@@ -5,7 +5,7 @@ import {ingredientDao} from '../daos/ingredientDao'
 import {recipeIngredientDao} from '../daos/recipeIngredientDao'
 import {recipeStepDao} from '../daos/recipeStepDao'
 import {FacadeContext} from '../types/types'
-import {NewRecipeData, Recipe, RecipeDataRaw} from '../shared/types/types'
+import {NewRecipeData, DB_Recipe, RecipeDataRaw} from '../shared/types/types'
 
 const importRecipe = (source: string) => {
   console.log('asd in import', source)
@@ -59,7 +59,7 @@ const getById = async (db: FacadeContext['db'], recipeId: string): Promise<Recip
   return result
 }
 
-const getAll = async (db: FacadeContext['db']): Promise<Array<Recipe>> => {
+const getAll = async (db: FacadeContext['db']): Promise<Array<DB_Recipe>> => {
   const result = await recipeDao.getAll(db)
   return result
 }

@@ -1,13 +1,13 @@
-import {RecipeStep} from '../shared/types/types'
+import {DB_RecipeStep} from '../shared/types/types'
 import {DaoContext} from '../types/types'
 import {gotFirstRow} from './utils'
 
 const TABLE_NAME = 'recipeStep'
 
-const createNew = async (trx: DaoContext['trx'], data: Omit<RecipeStep, 'id'>) =>
+const createNew = async (trx: DaoContext['trx'], data: Omit<DB_RecipeStep, 'id'>) =>
   await gotFirstRow(trx(TABLE_NAME).insert(data, 'id'), 'id')
 
-const getByRecipeId = async (db: DaoContext['db'], recipeId: RecipeStep['recipeId']) =>
+const getByRecipeId = async (db: DaoContext['db'], recipeId: DB_RecipeStep['recipeId']) =>
   await db(TABLE_NAME).where({recipeId}).orderBy('position')
 
 export const recipeStepDao = {

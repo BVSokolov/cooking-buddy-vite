@@ -23,18 +23,18 @@ export enum QuantityUOM {
 export type TimeMeasureUnit = Record<TimeUOM, string>
 export type QuantityMeasureUnit = Record<QuantityUOM, string>
 
-export type Ingredient = {
+export type DB_Ingredient = {
   id: string
   name: string
 }
 
-export type Recipe = {
+export type DB_Recipe = {
   id: string
   name: string
   servings: number | null
 }
 
-export type RecipeTime = {
+export type DB_RecipeTime = {
   id: string
   recipeId: string
   inAdvance: number | null
@@ -47,14 +47,14 @@ export type RecipeTime = {
   totalUOM: TimeMeasureUnit
 }
 
-export type RecipeSection = {
+export type DB_RecipeSection = {
   id: string
   recipeId: string
   name: string
   position: number
 }
 
-export type RecipeIngredient = {
+export type DB_RecipeIngredient = {
   id: string
   ingredientId: string
   recipeId: string
@@ -64,7 +64,7 @@ export type RecipeIngredient = {
   position: number
 }
 
-export type RecipeStep = {
+export type DB_RecipeStep = {
   id: string
   recipeId: string
   recipeSectionId: string | null
@@ -72,9 +72,9 @@ export type RecipeStep = {
   text: string
 }
 
-export type NewRecipeMetaData = Omit<Recipe, 'id'>
+export type NewRecipeMetaData = Omit<DB_Recipe, 'id'>
 
-export type NewRecipeTimeData = Omit<RecipeTime, 'id' | 'recipeId'>
+export type NewRecipeTimeData = Omit<DB_RecipeTime, 'id' | 'recipeId'>
 
 export type NewRecipeIngredientData = {
   name: string
@@ -90,7 +90,7 @@ export type NewRecipeStepData = {
 }
 
 export type NewRecipeSectionData<
-  T extends NewRecipeIngredientData | NewRecipeStepData | RecipeIngredient | RecipeStep,
+  T extends NewRecipeIngredientData | NewRecipeStepData | DB_RecipeIngredient | DB_RecipeStep,
 > = {
   name: string
   position: number
@@ -98,7 +98,7 @@ export type NewRecipeSectionData<
 }
 
 export type RecipeBodySectionsDataNew<
-  T extends NewRecipeIngredientData | NewRecipeStepData | RecipeIngredient | RecipeStep,
+  T extends NewRecipeIngredientData | NewRecipeStepData | DB_RecipeIngredient | DB_RecipeStep,
 > = Array<NewRecipeSectionData<T>>
 
 export type NewRecipeData = NewRecipeMetaData & {
@@ -123,9 +123,9 @@ export type NewRecipeData = NewRecipeMetaData & {
 // steps: [{text: chop the ref0, position: 0, sectionIndex: null},
 //        {text: chop the ref1 and throw the ref1 and ref0 in the pan, position: 1, sectionIndex: null}]
 
-export type RecipeDataRaw = Recipe & {
-  time: RecipeTime
-  sections: Array<RecipeSection>
-  ingredients: Array<RecipeIngredient>
-  steps: Array<RecipeStep>
+export type RecipeDataRaw = DB_Recipe & {
+  time: DB_RecipeTime
+  sections: Array<DB_RecipeSection>
+  ingredients: Array<DB_RecipeIngredient>
+  steps: Array<DB_RecipeStep>
 }

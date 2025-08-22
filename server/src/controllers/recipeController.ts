@@ -1,5 +1,5 @@
 import {recipeFacade} from '../facades/recipeFacade'
-import {NewRecipeData, Recipe} from '../shared/types/types'
+import {NewRecipeData, DB_Recipe} from '../shared/types/types'
 import {EndpointContext} from '../types/types'
 
 const getRecipes = async (ctx: EndpointContext) => {
@@ -11,7 +11,7 @@ const getRecipes = async (ctx: EndpointContext) => {
 
 type GetRecipeEndpointCtx = EndpointContext & {
   params: {
-    recipeId: Recipe['id']
+    recipeId: DB_Recipe['id']
   }
 }
 const getRecipe = async (ctx: GetRecipeEndpointCtx) => {

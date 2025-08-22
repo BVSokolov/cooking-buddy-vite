@@ -1,4 +1,4 @@
-import {Recipe} from '../shared/types/types'
+import {DB_Recipe} from '../shared/types/types'
 import {gotFirstRow} from './utils'
 import {DaoContext} from '../types/types'
 
@@ -9,7 +9,7 @@ const getById = async (db: DaoContext['db'], id: string) => {
   return await gotFirstRow(db('recipe').where({id}))
 }
 
-const createNew = async (trx: DaoContext['trx'], data: Omit<Recipe, 'id'>) =>
+const createNew = async (trx: DaoContext['trx'], data: Omit<DB_Recipe, 'id'>) =>
   await gotFirstRow(trx('recipe').insert(data, 'id'), 'id')
 
 export const recipeDao = {
