@@ -89,8 +89,18 @@ export type NewRecipeStepData = {
   position: number
 }
 
+export type RecipeIngredientRaw = DB_Ingredient & DB_RecipeIngredient
+export type RecipeStepRaw = DB_RecipeStep
+export type RecipeSectionRaw = DB_RecipeSection
+
 export type NewRecipeSectionData<
-  T extends NewRecipeIngredientData | NewRecipeStepData | DB_RecipeIngredient | DB_RecipeStep,
+  T extends
+    | NewRecipeIngredientData
+    | NewRecipeStepData
+    | DB_RecipeIngredient
+    | DB_RecipeStep
+    | RecipeIngredientRaw
+    | RecipeStepRaw,
 > = {
   name: string
   position: number
@@ -125,7 +135,7 @@ export type NewRecipeData = NewRecipeMetaData & {
 
 export type RecipeDataRaw = DB_Recipe & {
   time: DB_RecipeTime
-  sections: Array<DB_RecipeSection>
-  ingredients: Array<DB_RecipeIngredient>
-  steps: Array<DB_RecipeStep>
+  sections: Array<RecipeSectionRaw>
+  ingredients: Array<RecipeIngredientRaw>
+  steps: Array<RecipeStepRaw>
 }

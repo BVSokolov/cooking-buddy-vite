@@ -2,18 +2,18 @@ import {api} from '@/api/api'
 import type {
   NewRecipeData,
   DB_Recipe,
-  RecipeBodySectionsDataNew,
-  DB_RecipeIngredient,
-  DB_RecipeStep,
   DB_RecipeTime,
+  RecipeStepRaw,
+  RecipeIngredientRaw,
+  RecipeBodySectionsDataNew,
 } from '@shared/types/types'
 import {useMutation, useQuery} from '@tanstack/react-query'
 import _ from 'lodash'
 
 export type RecipeData = DB_Recipe & {
   time: DB_RecipeTime
-  ingredients: RecipeBodySectionsDataNew<DB_RecipeIngredient>
-  steps: RecipeBodySectionsDataNew<DB_RecipeStep>
+  ingredients: RecipeBodySectionsDataNew<RecipeIngredientRaw>
+  steps: RecipeBodySectionsDataNew<RecipeStepRaw>
 }
 
 const useGetRecipes = () =>
@@ -35,13 +35,16 @@ const useGetRecipe = (recipeId: DB_Recipe['id']) =>
       const ingredients = _(ingredientsRaw)
         .groupBy('recipeSectionId')
         .map((sectionIngredients, sectionId) => ({...sections[sectionId], elements: sectionIngredients}))
+        .orderBy('position')
         .value()
       const steps = _(stepsRaw)
         .groupBy('recipeSectionId')
         .map((sectionSteps, sectionId) => ({...sections[sectionId], elements: sectionSteps}))
+        .orderBy('position')
         .value()
 
-      const recipeData = {...data.data, ingredients, steps}
+      const {id, name, servings, time} = data.data
+      const recipeData: RecipeData = {id, name, servings, time, ingredients, steps}
       return recipeData
     },
   })
