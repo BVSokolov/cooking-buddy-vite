@@ -1,12 +1,17 @@
 import {Route, Routes, useNavigate} from 'react-router-dom'
 import {NewRecipePage} from './NewRecipe/NewRecipe'
-import {useGetRecipes} from '@/Hooks/Queries/Recipe/recipeQueries'
+import {useDeleteRecipeMutation, useGetRecipes} from '@/Hooks/Queries/Recipe/recipeQueries'
 import type {DB_Recipe} from '@shared/types/types'
 import {Recipe} from './Recipe/Recipe'
 
 const RecipeList = () => {
   const {isLoading, isSuccess, data} = useGetRecipes()
+  const deleteRecipeMutation = useDeleteRecipeMutation()
   const navigate = useNavigate()
+
+  const deleteRecipe = (recipeId: DB_Recipe['id']) => {
+    deleteRecipeMutation.mutate(recipeId)
+  }
 
   if (isLoading) return <div>loading...</div>
   const recipes: Array<DB_Recipe> = data?.data || []
@@ -17,11 +22,12 @@ const RecipeList = () => {
       <h1>Recipes</h1>
       {isSuccess && (
         <ul>
-          {recipes.map((recipe, _index) => (
-            <li key={recipe.id}>
-              <a href="" onClick={() => navigate(`${recipe.id}`)}>
-                {recipe.name}
+          {recipes.map(({id, name}, _index) => (
+            <li key={id}>
+              <a href="" onClick={() => navigate(`${id}`)}>
+                {name}
               </a>
+              <button onClick={() => deleteRecipe(id)}>Delete</button>
             </li>
           ))}
         </ul>

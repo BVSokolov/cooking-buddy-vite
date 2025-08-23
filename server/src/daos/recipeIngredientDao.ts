@@ -1,4 +1,4 @@
-import {DB_RecipeIngredient} from '../shared/types/types'
+import {DB_Recipe, DB_RecipeIngredient} from '../shared/types/types'
 import {DaoContext} from '../types/types'
 import {gotFirstRow} from './utils'
 
@@ -13,7 +13,11 @@ const getByRecipeId = async (db: DaoContext['db'], recipeId: DB_RecipeIngredient
     .where({recipeId})
     .orderBy('position')
 
+const deleteByRecipeId = async (trx: DaoContext['trx'], recipeId: DB_Recipe['id']) =>
+  await trx(TABLE_NAME).delete().where({recipeId})
+
 export const recipeIngredientDao = {
   createNew,
   getByRecipeId,
+  deleteByRecipeId,
 }

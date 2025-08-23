@@ -2,6 +2,8 @@ import {DB_Recipe} from '../shared/types/types'
 import {gotFirstRow} from './utils'
 import {DaoContext} from '../types/types'
 
+const TABLE_NAME = 'recipe'
+
 const getAll = async (db: DaoContext['db']) => await db('recipe').select(['id', 'name'])
 
 const getById = async (db: DaoContext['db'], id: string) => {
@@ -12,8 +14,12 @@ const getById = async (db: DaoContext['db'], id: string) => {
 const createNew = async (trx: DaoContext['trx'], data: Omit<DB_Recipe, 'id'>) =>
   await gotFirstRow(trx('recipe').insert(data, 'id'), 'id')
 
+const deleteById = async (trx: DaoContext['trx'], id: DB_Recipe['id']) =>
+  await trx(TABLE_NAME).delete().where({id})
+
 export const recipeDao = {
   getAll,
   getById,
   createNew,
+  deleteById,
 }

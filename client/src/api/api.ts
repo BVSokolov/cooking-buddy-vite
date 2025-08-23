@@ -6,6 +6,8 @@ const recipes = {
   getRecipe: async (recipeId: DB_Recipe['id']): AxiosPromise<RecipeDataRaw> =>
     await axios.get(`http://localhost:3000/recipes/${recipeId}`),
   putRecipe: async (data: NewRecipeData) => await axios.post('http://localhost:3000/recipes/new', data),
+  deleteRecipe: async (recipeId: DB_Recipe['id']) =>
+    await axios.delete(`http://localhost:3000/recipes/${recipeId}`),
 }
 
 const api = {

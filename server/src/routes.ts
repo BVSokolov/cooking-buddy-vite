@@ -12,6 +12,7 @@ router.get('/', root)
 router.get('/recipes', recipeController.getRecipes)
 router.get('/recipes/:recipeId', recipeController.getRecipe)
 router.post('/recipes/new', recipeController.newRecipe)
+router.delete('/recipes/:recipeId', recipeController.deleteRecipe)
 // router.put('/recipes/:recipeId/edit', recipesController.getRecipe)
 
 export {router}

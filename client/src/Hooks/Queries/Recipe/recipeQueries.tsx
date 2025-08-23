@@ -7,8 +7,10 @@ import type {
   RecipeIngredientRaw,
   RecipeBodySectionsDataNew,
 } from '@shared/types/types'
-import {useMutation, useQuery} from '@tanstack/react-query'
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import _ from 'lodash'
+
+const queryClient = useQueryClient()
 
 export type RecipeData = DB_Recipe & {
   time: DB_RecipeTime
@@ -16,15 +18,20 @@ export type RecipeData = DB_Recipe & {
   steps: RecipeBodySectionsDataNew<RecipeStepRaw>
 }
 
+const queryKeys = {
+  getRecipes: () => ['recipes'],
+  getRecipe: (recipeId: DB_Recipe['id']) => ['recipes', recipeId],
+}
+
 const useGetRecipes = () =>
   useQuery({
-    queryKey: ['recipes'],
+    queryKey: queryKeys.getRecipes(),
     queryFn: api.recipes.getRecipes,
   })
 
 const useGetRecipe = (recipeId: DB_Recipe['id']) =>
   useQuery<RecipeData>({
-    queryKey: ['recipes', recipeId],
+    queryKey: queryKeys.getRecipe(recipeId),
     queryFn: async (): Promise<RecipeData> => {
       const data = await api.recipes.getRecipe(recipeId)
       if (data.status !== 200)
@@ -52,6 +59,13 @@ const useGetRecipe = (recipeId: DB_Recipe['id']) =>
 const useNewRecipeMutation = () =>
   useMutation({
     mutationFn: (recipeData: NewRecipeData) => api.recipes.putRecipe(recipeData),
+    onSuccess: () => queryClient.invalidateQueries({queryKey: queryKeys.getRecipes()}),
   })
 
-export {useGetRecipes, useGetRecipe, useNewRecipeMutation}
+const useDeleteRecipeMutation = () =>
+  useMutation({
+    mutationFn: (recipeId: DB_Recipe['id']) => api.recipes.deleteRecipe(recipeId),
+    onSuccess: () => queryClient.invalidateQueries({queryKey: queryKeys.getRecipes()}),
+  })
+
+export {useGetRecipes, useGetRecipe, useNewRecipeMutation, useDeleteRecipeMutation}

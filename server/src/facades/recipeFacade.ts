@@ -46,6 +46,37 @@ const newRecipe = async ({db, trx}: FacadeContext, recipeData: NewRecipeData) =>
   return recipeId
 }
 
+const editRecipe = async ({db, trx}: FacadeContext, recipeData: NewRecipeData) => {
+  const {name, servings, time} = recipeData
+  const recipeId = await recipeDao.createNew(trx, {name, servings}) // update instead of create new
+
+  await recipeTimeDao.createNew(trx, {recipeId, ...time}) // update instead of create new
+
+  // await recipeIngredientDao.deleteByRecipeId(trx, recipeId)
+  // await recipeStepDao.deleteByRecipeId(trx, recipeId)
+  // await recipeSectionDao.deleteByRecipeId(trx, recipeId)
+
+  const {ingredients: ingredientSections} = recipeData
+  for (const {name, position, elements} of ingredientSections) {
+    const recipeSectionId = await recipeSectionDao.createNew(trx, {recipeId, name, position})
+    for (const {name, ...rest} of elements) {
+      const ingredientId = await ingredientDao.gotIdByName(trx, name)
+      await recipeIngredientDao.createNew(trx, {recipeId, ingredientId, recipeSectionId, ...rest})
+    }
+  }
+
+  const {steps: stepSections} = recipeData
+  for (const {name, position, elements} of stepSections) {
+    const recipeSectionId = await recipeSectionDao.createNew(trx, {recipeId, name, position})
+
+    for (const step of elements) {
+      await recipeStepDao.createNew(trx, {recipeId, recipeSectionId, ...step})
+    }
+  }
+
+  return recipeId
+}
+
 const getById = async (db: FacadeContext['db'], recipeId: string): Promise<RecipeDataRaw> => {
   const recipe = await recipeDao.getById(db, recipeId)
   if (recipe === undefined) throw new Error('could not find recipe with provided id')
@@ -64,4 +95,12 @@ const getAll = async (db: FacadeContext['db']): Promise<Array<DB_Recipe>> => {
   return result
 }
 
-export const recipeFacade = {importRecipe, newRecipe, getById, getAll}
+const deleteById = async (trx: FacadeContext['trx'], recipeId: string): Promise<void> => {
+  await recipeTimeDao.deleteByRecipeId(trx, recipeId)
+  await recipeIngredientDao.deleteByRecipeId(trx, recipeId)
+  await recipeStepDao.deleteByRecipeId(trx, recipeId)
+  await recipeSectionDao.deleteByRecipeId(trx, recipeId)
+  await recipeDao.deleteById(trx, recipeId)
+}
+
+export const recipeFacade = {importRecipe, newRecipe, getById, getAll, deleteById}

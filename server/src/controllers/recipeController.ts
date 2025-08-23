@@ -35,8 +35,22 @@ const newRecipe = async (ctx: NewRecipeEndpointCtx) => {
   return ctx
 }
 
+type DeleteRecipeEndpointCtx = EndpointContext & {
+  params: {
+    recipeId: DB_Recipe['id']
+  }
+}
+const deleteRecipe = async (ctx: DeleteRecipeEndpointCtx) => {
+  const {recipeId} = ctx.params
+  const {trx} = ctx
+  ctx.status = 200
+  ctx.body = await recipeFacade.deleteById(trx, recipeId)
+  return ctx
+}
+
 export const recipeController = {
   getRecipes,
   getRecipe,
   newRecipe,
+  deleteRecipe,
 }
